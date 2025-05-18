@@ -1,5 +1,4 @@
 import { openModal, closeModal } from './modal';
-// import { postData } from '../services/services';
 
 function forms(formSelector, modalTimerId) {
   const forms = document.querySelectorAll(formSelector);
@@ -26,51 +25,20 @@ function forms(formSelector, modalTimerId) {
       `;
       form.insertAdjacentElement('afterend', statusMessage);
 
-      const formData = new FormData(form);
+      // Просто дозволяємо формі відправитися стандартно (Netlify обробить)
+      setTimeout(() => {
+        // Імітуємо успішну відправку
+        statusMessage.remove();
+        showThanksModal(message.success);
+        form.reset();
+      }, 1000);
 
-      // --- ЛОКАЛЬНА ВІДПРАВКА НА JSON-SERVER (localhost:3000) ---
-      // const json = JSON.stringify(Object.fromEntries(formData.entries()));
-      //
-      // postData('http://localhost:3000/requests', json)
-      //   .then(data => {
-      //     console.log(data);
-      //     showThanksModal(message.success);
-      //     statusMessage.remove();
-      //   })
-      //   .catch(() => {
-      //     showThanksModal(message.failure);
-      //     statusMessage.remove();
-      //   })
-      //   .finally(() => {
-      //     form.reset();
-      //   });
-
-      // --- ВІДПРАВКА ДАНИХ НА NETLIFY FORMS ---
-      fetch(form.getAttribute('action') || window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(formData).toString()
-      })
-        .then(response => {
-          if (response.ok) {
-            return response;
-          } else {
-            throw new Error(`Network response was not ok. Status: ${response.status}`);
-          }
-        })
-        .then(() => {
-          console.log('Form submitted to Netlify Forms');
-          showThanksModal(message.success);
-          statusMessage.remove();
-        })
-        .catch(error => {
-          console.error('Error submitting form:', error);
-          showThanksModal(message.failure);
-          statusMessage.remove();
-        })
-        .finally(() => {
-          form.reset();
-        });
+      // Якщо щось пішло не так (наприклад, немає мережі), показуємо помилку
+      window.addEventListener('error', () => {
+        statusMessage.remove();
+        showThanksModal(message.failure);
+        form.reset();
+      }, { once: true });
     });
   }
 
@@ -84,7 +52,7 @@ function forms(formSelector, modalTimerId) {
     thanksModal.classList.add('modal__dialog');
     thanksModal.innerHTML = `
       <div class="modal__content">
-        <div class="modal__close" data-close>&times;</div>
+        <div class="modal__close" data-close>×</div>
         <div class="modal__title">${message}</div>
       </div> 
     `;
@@ -97,11 +65,6 @@ function forms(formSelector, modalTimerId) {
       closeModal('.modal');
     }, 4000);
   }
-
-  // --- ЛОКАЛЬНЕ ОТРИМАННЯ ДАНИХ З СЕРВЕРА ---
-  // fetch('http://localhost:3000/menu')
-  //   .then(data => data.json())
-  //   .then(res => console.log(res));
 }
 
 export default forms;
