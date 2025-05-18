@@ -5,19 +5,17 @@ function forms(formSelector, modalTimerId) {
 
   const message = {
     loading: 'img/form/spinner.svg',
-    success: 'Дякую! Скоро ми з вами зв\'яжемся',
+    success: 'Дякую! Скоро ми з вами зв’яжемся',
     failure: 'Щось пішло не так...'
   };
 
   forms.forEach(form => {
-    // Замінюємо стандартну поведінку відправки
     form.addEventListener('submit', handleSubmit);
   });
 
   function handleSubmit(e) {
     e.preventDefault();
 
-    // Показуємо індикатор завантаження
     const statusMessage = document.createElement('img');
     statusMessage.src = message.loading;
     statusMessage.style.cssText = `
@@ -26,37 +24,22 @@ function forms(formSelector, modalTimerId) {
     `;
     this.insertAdjacentElement('afterend', statusMessage);
 
-    // Готуємо форму до звичайної відправки як форма Netlify
-    const form = this;
-    
-    // Переконуємося, що форма має правильне hidden поле form-name
-    let formNameInput = form.querySelector('input[name="form-name"]');
-    if (!formNameInput) {
-      formNameInput = document.createElement('input');
-      formNameInput.type = 'hidden';
-      formNameInput.name = 'form-name';
-      formNameInput.value = form.getAttribute('name');
-      form.appendChild(formNameInput);
-    }
+    // Дозволяємо Netlify обробити форму автоматично
+    this.submit();
 
-    // Відправляємо форму програмно
-    const formData = new FormData(form);
-    
-    // Створюємо та виконуємо запит
-    fetch('/', {
-      method: 'POST',
-      body: new URLSearchParams(formData).toString(),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    })
-    .then(() => {
+    // Імітуємо затримку для UI
+    setTimeout(() => {
       statusMessage.remove();
       showThanksModal(message.success);
-      form.reset();
-    })
-    .catch(() => {
+      this.reset();
+    }, 1000);
+
+    // Обробка помилок (резервна)
+    window.addEventListener('error', () => {
       statusMessage.remove();
       showThanksModal(message.failure);
-    });
+      this.reset();
+    }, { once: true });
   }
 
   function showThanksModal(message) {
