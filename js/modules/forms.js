@@ -5,40 +5,57 @@ function forms(formSelector, modalTimerId) {
 
   const message = {
     loading: 'img/form/spinner.svg',
-    success: 'Дякую! Скоро ми з вами зв’яжемся',
+    success: 'Дякую! Скоро ми з вами зв'яжемся',
     failure: 'Щось пішло не так...'
   };
 
   forms.forEach(form => {
-    bindPostData(form);
+    // Замінюємо стандартну поведінку відправки
+    form.addEventListener('submit', handleSubmit);
   });
 
-  function bindPostData(form) {
-    form.addEventListener('submit', e => {
-      e.preventDefault();
+  function handleSubmit(e) {
+    e.preventDefault();
 
-      const statusMessage = document.createElement('img');
-      statusMessage.src = message.loading;
-      statusMessage.style.cssText = `
-        display: block;
-        margin: 0 auto;
-      `;
-      form.insertAdjacentElement('afterend', statusMessage);
+    // Показуємо індикатор завантаження
+    const statusMessage = document.createElement('img');
+    statusMessage.src = message.loading;
+    statusMessage.style.cssText = `
+      display: block;
+      margin: 0 auto;
+    `;
+    this.insertAdjacentElement('afterend', statusMessage);
 
-      // Просто дозволяємо формі відправитися стандартно (Netlify обробить)
-      setTimeout(() => {
-        // Імітуємо успішну відправку
-        statusMessage.remove();
-        showThanksModal(message.success);
-        form.reset();
-      }, 1000);
+    // Готуємо форму до звичайної відправки як форма Netlify
+    const form = this;
+    
+    // Переконуємося, що форма має правильне hidden поле form-name
+    let formNameInput = form.querySelector('input[name="form-name"]');
+    if (!formNameInput) {
+      formNameInput = document.createElement('input');
+      formNameInput.type = 'hidden';
+      formNameInput.name = 'form-name';
+      formNameInput.value = form.getAttribute('name');
+      form.appendChild(formNameInput);
+    }
 
-      // Якщо щось пішло не так (наприклад, немає мережі), показуємо помилку
-      window.addEventListener('error', () => {
-        statusMessage.remove();
-        showThanksModal(message.failure);
-        form.reset();
-      }, { once: true });
+    // Відправляємо форму програмно
+    const formData = new FormData(form);
+    
+    // Створюємо та виконуємо запит
+    fetch('/', {
+      method: 'POST',
+      body: new URLSearchParams(formData).toString(),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(() => {
+      statusMessage.remove();
+      showThanksModal(message.success);
+      form.reset();
+    })
+    .catch(() => {
+      statusMessage.remove();
+      showThanksModal(message.failure);
     });
   }
 
